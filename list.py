@@ -46,8 +46,8 @@ what I have in my @[list_name]
 
 %[send_list]
   send me the list @[list_name]
-  send the list @[list_name] to @[email] 
-  send @[list_name] to @[email]
+  send the list @[list_name] to @[target_email] 
+  send @[list_name] to @[target_email]
 
 @[list_name]
   shoping list
@@ -65,8 +65,9 @@ what I have in my @[list_name]
   eggs
   trip
 
-@[email]
+@[target_email]
   first.name@domain.com
+  me
 
 """
 
@@ -288,13 +289,19 @@ def on_send_list(req):
     req.agent.answer(req._('Hummm! The list "{0}" seems not exists.').format(list_name))
     return req.agent.done()
   
+  target_email = req.intent.slot('target_email').first().value
+  if not target_email:
+    return req.agent.ask('target_email',req._('Which list?'))
+    
   if not req.agent.meta.get('PYTLAS-LIST-SMTP') or \
   not req.agent.meta.get('PYTLAS-LIST-FROM') or \
-  not req.agent.meta.get('PYTLAS-LIST-LOGIN') or \
-  not req.agent.meta.get('PYTLAS-LIST-PWD'):
+  not req.agent.meta.get('PYTLAS-LIST-SMTP-LOGIN') or \
+  not req.agent.meta.get('PYTLAS-LIST-SMTP-PWD'):
     req.agent.answer(req._('Hummm! Credentials are requiered to send email.'))
     return req.agent.done()
 
+  if target_email == "me":
+    target_email = req.agent.meta.get('PYTLAS-LIST-FROM')
   list_content = {}
   try:
     with open(list_path,'r') as json_file:
@@ -303,14 +310,25 @@ def on_send_list(req):
     req.agent.answer(req._('Oops! Something bad append. I can\'t open the file "{0}"').format(list_path))
     return req.agent.done()    
 
-    server = smtplib.SMTP('smtp.gmail.com', 587)
+  msg = "\n"
+  msg = msg + list_content['name'] + "\n"
+  msg = msg + "=" *  len(list_content['name']) + "\n"
+  for item in list_content['item']:
+    msg = msg + "-[ ]" + item + "\n"
+
+  try:
+    server = smtplib.SMTP(req.agent.meta.get('PYTLAS-LIST-SMTP'), 587)
 
     #Next, log in to the server
-    server.login("youremailusername", "password")
+    server.login(req.agent.meta.get('PYTLAS-LIST-SMTP-LOGIN'), req.agent.meta.get('PYTLAS-LIST-SMTP-PWD'))
 
     #Send the mail
-    msg = """
-    
-    Hello!""" # The /n separates the message from the headers
-    server.sendmail("you@gmail.com", "target@example.com", msg)
+    server.sendmail(req.agent.meta.get('PYTLAS-LIST-FROM'), target_email, msg)
+  except:
+    req.agent.answer(req._('Hummm! Email sending failed.'))
+    return req.agent.done()
+
+  req.agent.answer(req._('Email successfully sent.'))
+  return req.agent.done()
+
 
