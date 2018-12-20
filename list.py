@@ -4,11 +4,8 @@ import os
 import unicodedata
 import re
 import smtplib
+import pytlas.settings as settings
 # This entity will be shared among training data since it's not language specific
-
-"""
-
-"""
 
 
 @training('en')
@@ -45,9 +42,9 @@ enumerate my @[list_name]
 what I have in my @[list_name]
 
 %[send_list]
-  send me the list @[list_name]
-  send the list @[list_name] to @[target_email] 
-  send @[list_name] to @[target_email]
+  send to @[to_email] the list @[list_name]
+  send the list @[list_name] to @[to_email] 
+  send @[list_name] to @[to_email]
 
 @[list_name]
   shoping list
@@ -65,7 +62,7 @@ what I have in my @[list_name]
   eggs
   trip
 
-@[target_email]
+@[to_email]
   first.name@domain.com
   me
 
@@ -124,7 +121,7 @@ def on_create_list(req):
   if not list_name:
     return req.agent.ask('list_name',req._('Please choose a name for your list.'))
 
-  list_dir_path = req.agent.meta.get('PYTLAS-LIST-PATH')  
+  list_dir_path = settings.get('path','pytlas_list')  
   if not list_dir_path:
     list_dir_path = default_pytlas_list_path()
   
@@ -151,7 +148,7 @@ def on_delete_list(req):
   list_name = req.intent.slot('list_name').first().value
   if not list_name:
     return req.agent.ask('list_name',req._('In which list?'))
-  list_dir_path = req.agent.meta.get('PYTLAS-LIST-PATH')  
+  list_dir_path = settings.get('path','pytlas_list')  
   if not list_dir_path:
     list_dir_path = default_pytlas_list_path()
   
@@ -181,7 +178,7 @@ def on_add_item(req):
   if not list_name:
     return req.agent.ask('list_name',req._('In which list?'))
 
-  list_dir_path = req.agent.meta.get('PYTLAS-LIST-PATH')  
+  list_dir_path = settings.get('path','pytlas_list')  
   if not list_dir_path:
     list_dir_path = default_pytlas_list_path()
   
@@ -222,7 +219,7 @@ def on_remove_item(req):
   if not list_name:
     return req.agent.ask('list_name',req._('From which list?'))
 
-  list_dir_path = req.agent.meta.get('PYTLAS-LIST-PATH')  
+  list_dir_path = settings.get('path','pytlas_list')  
   if not list_dir_path:
     list_dir_path = default_pytlas_list_path()
   
@@ -252,7 +249,7 @@ def on_display_list(req):
   if not list_name:
     return req.agent.ask('list_name',req._('Which list?'))
   
-  list_dir_path = req.agent.meta.get('PYTLAS-LIST-PATH')  
+  list_dir_path = settings.get('path','pytlas_list')
   if not list_dir_path:
     list_dir_path = default_pytlas_list_path()
   
@@ -279,7 +276,7 @@ def on_send_list(req):
   if not list_name:
     return req.agent.ask('list_name',req._('Which list?'))
   
-  list_dir_path = req.agent.meta.get('PYTLAS-LIST-PATH')  
+  list_dir_path = settings.get('path','pytlas_list')  
   if not list_dir_path:
     list_dir_path = default_pytlas_list_path()
   
@@ -289,19 +286,38 @@ def on_send_list(req):
     req.agent.answer(req._('Hummm! The list "{0}" seems not exists.').format(list_name))
     return req.agent.done()
   
-  target_email = req.intent.slot('target_email').first().value
-  if not target_email:
-    return req.agent.ask('target_email',req._('Which list?'))
-    
-  if not req.agent.meta.get('PYTLAS-LIST-SMTP') or \
-  not req.agent.meta.get('PYTLAS-LIST-FROM') or \
-  not req.agent.meta.get('PYTLAS-LIST-SMTP-LOGIN') or \
-  not req.agent.meta.get('PYTLAS-LIST-SMTP-PWD'):
-    req.agent.answer(req._('Hummm! Credentials are requiered to send email.'))
-    return req.agent.done()
+  
+  from_email = req.intent.slot('from_email').first().value
+  if not from_email:
+    from_email = settings.get('from','pytlas_list')
+  if not from_email:
+    return req.agent.ask('from_email',req._('Please tell me from which email address'))
 
-  if target_email == "me":
-    target_email = req.agent.meta.get('PYTLAS-LIST-FROM')
+  to_email = req.intent.slot('to_email').first().value
+  if not to_email:
+    return req.agent.ask('to_email',req._('Please tell to which email address'))
+  
+  if to_email == "me":
+    to_email = from_email  
+
+  smtp_address = req.intent.slot('smtp_address').first().value
+  if not smtp_address:
+    smtp_address = settings.get('from','pytlas_list')
+  if not smtp_address:
+    return req.agent.ask('smtp_address',req._('Please give me the smtp server address'))
+
+  smtp_login = req.intent.slot('smtp_login').first().value
+  if not smtp_login:
+    smtp_login = settings.get('smtp_login','pytlas_list')
+  if not smtp_login:
+    return req.agent.ask('smtp_login',req._('Please give me the smtp server login'))
+
+  smtp_pwd = req.intent.slot('smtp_pwd').first().value
+  if not smtp_pwd:
+    smtp_pwd = settings.get('smtp_pwd','pytlas_list')
+  if not smtp_pwd:
+    return req.agent.ask('smtp_pwd',req._('Please give me the smtp server pwd'))
+
   list_content = {}
   try:
     with open(list_path,'r') as json_file:
@@ -313,17 +329,17 @@ def on_send_list(req):
   msg = "\n"
   msg = msg + list_content['name'] + "\n"
   msg = msg + "=" *  len(list_content['name']) + "\n"
-  for item in list_content['item']:
+  for item in list_content['items']:
     msg = msg + "-[ ]" + item + "\n"
 
   try:
-    server = smtplib.SMTP(req.agent.meta.get('PYTLAS-LIST-SMTP'), 587)
+    server = smtplib.SMTP(smtp_address, 25)
 
     #Next, log in to the server
-    server.login(req.agent.meta.get('PYTLAS-LIST-SMTP-LOGIN'), req.agent.meta.get('PYTLAS-LIST-SMTP-PWD'))
+    server.login(smtp_login, smtp_pwd)
 
     #Send the mail
-    server.sendmail(req.agent.meta.get('PYTLAS-LIST-FROM'), target_email, msg)
+    server.sendmail(from_email, to_email, msg)
   except:
     req.agent.answer(req._('Hummm! Email sending failed.'))
     return req.agent.done()
