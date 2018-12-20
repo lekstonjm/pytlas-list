@@ -121,7 +121,7 @@ def on_create_list(req):
   if not list_name:
     return req.agent.ask('list_name',req._('Please choose a name for your list.'))
 
-  list_dir_path = settings.get('path','pytlas_list')  
+  list_dir_path = settings.get('path',section='pytlas_list')  
   if not list_dir_path:
     list_dir_path = default_pytlas_list_path()
   
@@ -148,7 +148,7 @@ def on_delete_list(req):
   list_name = req.intent.slot('list_name').first().value
   if not list_name:
     return req.agent.ask('list_name',req._('In which list?'))
-  list_dir_path = settings.get('path','pytlas_list')  
+  list_dir_path = settings.get('path',section='pytlas_list')  
   if not list_dir_path:
     list_dir_path = default_pytlas_list_path()
   
@@ -178,7 +178,7 @@ def on_add_item(req):
   if not list_name:
     return req.agent.ask('list_name',req._('In which list?'))
 
-  list_dir_path = settings.get('path','pytlas_list')  
+  list_dir_path = settings.get('path',section='pytlas_list')  
   if not list_dir_path:
     list_dir_path = default_pytlas_list_path()
   
@@ -219,7 +219,7 @@ def on_remove_item(req):
   if not list_name:
     return req.agent.ask('list_name',req._('From which list?'))
 
-  list_dir_path = settings.get('path','pytlas_list')  
+  list_dir_path = settings.get('path',section='pytlas_list')  
   if not list_dir_path:
     list_dir_path = default_pytlas_list_path()
   
@@ -249,7 +249,7 @@ def on_display_list(req):
   if not list_name:
     return req.agent.ask('list_name',req._('Which list?'))
   
-  list_dir_path = settings.get('path','pytlas_list')
+  list_dir_path = settings.get('path',section='pytlas_list')
   if not list_dir_path:
     list_dir_path = default_pytlas_list_path()
   
@@ -276,7 +276,7 @@ def on_send_list(req):
   if not list_name:
     return req.agent.ask('list_name',req._('Which list?'))
   
-  list_dir_path = settings.get('path','pytlas_list')  
+  list_dir_path = settings.get('path',section='pytlas_list')  
   if not list_dir_path:
     list_dir_path = default_pytlas_list_path()
   
@@ -289,7 +289,7 @@ def on_send_list(req):
   
   from_email = req.intent.slot('from_email').first().value
   if not from_email:
-    from_email = settings.get('from','pytlas_list')
+    from_email = settings.get('from',section='pytlas_list')
   if not from_email:
     return req.agent.ask('from_email',req._('Please tell me from which email address'))
 
@@ -302,19 +302,19 @@ def on_send_list(req):
 
   smtp_address = req.intent.slot('smtp_address').first().value
   if not smtp_address:
-    smtp_address = settings.get('from','pytlas_list')
+    smtp_address = settings.get('smtp_address',section='pytlas_list')
   if not smtp_address:
     return req.agent.ask('smtp_address',req._('Please give me the smtp server address'))
 
   smtp_login = req.intent.slot('smtp_login').first().value
   if not smtp_login:
-    smtp_login = settings.get('smtp_login','pytlas_list')
+    smtp_login = settings.get('smtp_login',section='pytlas_list')
   if not smtp_login:
     return req.agent.ask('smtp_login',req._('Please give me the smtp server login'))
 
   smtp_pwd = req.intent.slot('smtp_pwd').first().value
   if not smtp_pwd:
-    smtp_pwd = settings.get('smtp_pwd','pytlas_list')
+    smtp_pwd = settings.get('smtp_pwd',section='pytlas_list')
   if not smtp_pwd:
     return req.agent.ask('smtp_pwd',req._('Please give me the smtp server pwd'))
 
@@ -331,7 +331,7 @@ def on_send_list(req):
   msg = msg + "=" *  len(list_content['name']) + "\n"
   for item in list_content['items']:
     msg = msg + "-[ ]" + item + "\n"
-
+  print('sending to {0} from {1} on {2} using credential {3} {4} of \n{5}'.format(to_email, from_email, smtp_address, smtp_login, smtp_pwd, msg))
   try:
     server = smtplib.SMTP(smtp_address, 25)
 
