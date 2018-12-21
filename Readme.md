@@ -1,6 +1,6 @@
 List Skill for Pytlas
 =====================
-The skill which helps you to manage your short \"aide-mémoire" lists.
+The skill which helps you to manage your \"aide-mémoire" lists.
 
 A skill powered by the open, non intrusive and super easy  pytlas assistant framework 
 
