@@ -1,7 +1,9 @@
-List Skill for Pytlas |licence|
+List Skill for pytlas |licence|
+===============================
+
 .. |license| image:: https://img.shields.io/badge/License-GPL%20v3-blue.svg
     :target: https://www.gnu.org/licenses/gpl-3.0
-=====================
+
 The skill which helps you to manage your \"aide-mémoire" lists.
 
 A skill powered by the open, non intrusive and super easy  pytlas assistant framework 
