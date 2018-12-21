@@ -4,6 +4,7 @@ import os
 import unicodedata
 import re
 import smtplib
+import sys
 import pytlas.settings as settings
 # This entity will be shared among training data since it's not language specific
 
@@ -36,15 +37,21 @@ def en_data(): return """
   remove @[item_name] from @[list_name]
 
 %[display_list]
-show me the @[list_name] content
-show me my @[list_name]
-enumerate my @[list_name]
-what I have in my @[list_name]
+  show me the @[list_name] content
+  show me my @[list_name]
+  enumerate content of my @[list_name]
+  display my @[list_name]
+  what I have in my @[list_name]
 
 %[send_list]
   send to @[to_email] the list @[list_name]
   send the list @[list_name] to @[to_email] 
   send @[list_name] to @[to_email]
+
+%[help_list]
+  give me help on list skill
+  give me advises on list skill
+  how does the list skill work
 
 @[list_name]
   shoping list
@@ -75,6 +82,26 @@ what I have in my @[list_name]
 #@translations('fr')
 #def fr_translations(): return {
 #}
+
+help="""
+The list skill helps you to manage your short \"aide-mémoire" lists.
+
+Example of sentences : 
+  create a new list named shopping list
+  add eggs in my shopping list
+  remove eggs from my shopping list
+  delete the list shopping list
+  show me the shopping list
+  send to to.someone@mail.com the shopping list
+  send to me the shopping list
+
+Configuration:
+  list file path = {0}  
+  from email = {1}
+  smtp address = {2}
+  smtp login = {3}
+  smtp password = {4}
+"""
 
 def slugify(value):
   """
@@ -114,6 +141,20 @@ def remove_from_file(item_name, list_path):
     list_content['items'] = [x for x in list_content['items'] if x != item_name]
   with open(list_path,'w') as json_file:
     json.dump(list_content, json_file)
+
+@intent('help_list')
+def on_help_list(req):
+  list_dir_path = settings.get('path',section='pytlas_list')  
+  if not list_dir_path:
+    list_dir_path = default_pytlas_list_path()  
+  from_email = settings.get('from_email',section='pytlas_list')
+  smtp_address = settings.get('smtp_address',section='pytlas_list')
+  smtp_login = settings.get('smtp_login',section='pytlas_list')
+  smtp_pwd = settings.get('smtp_pwd',section='pytlas_list')
+  req.agent.answer(req._(help).format(list_dir_path, from_email, smtp_address, smtp_login, smtp_pwd))
+  return req.agent.done()
+  
+
 
 @intent('create_list')
 def on_create_list(req):
@@ -254,7 +295,7 @@ def on_display_list(req):
     list_dir_path = default_pytlas_list_path()
   
   list_path = build_list_file_path(list_name, list_dir_path)
-  
+  print(list_path)
   if not os.path.exists(list_path):
     req.agent.answer(req._('Hummm! The list "{0}" seems not exists.').format(list_name))
     return req.agent.done()
@@ -289,7 +330,7 @@ def on_send_list(req):
   
   from_email = req.intent.slot('from_email').first().value
   if not from_email:
-    from_email = settings.get('from',section='pytlas_list')
+    from_email = settings.get('from_email',section='pytlas_list')
   if not from_email:
     return req.agent.ask('from_email',req._('Please tell me from which email address'))
 
@@ -331,17 +372,20 @@ def on_send_list(req):
   msg = msg + "=" *  len(list_content['name']) + "\n"
   for item in list_content['items']:
     msg = msg + "-[ ]" + item + "\n"
-  print('sending to {0} from {1} on {2} using credential {3} {4} of \n{5}'.format(to_email, from_email, smtp_address, smtp_login, smtp_pwd, msg))
-  try:
-    server = smtplib.SMTP(smtp_address, 25)
 
+  # print('sending to {0} from {1} on {2} using credential {3} {4} of \n{5}'.format(to_email, from_email, smtp_address, smtp_login, smtp_pwd, msg))
+  
+  try:
+    server = smtplib.SMTP(smtp_address+":587")
+    server.ehlo()
+    server.starttls()
     #Next, log in to the server
     server.login(smtp_login, smtp_pwd)
-
     #Send the mail
     server.sendmail(from_email, to_email, msg)
+    server.quit()
   except:
-    req.agent.answer(req._('Hummm! Email sending failed.'))
+    req.agent.answer(req._('Hummm! Email sending failed. Cause : {0}.').format(sys.exc_info()[0]))
     return req.agent.done()
 
   req.agent.answer(req._('Email successfully sent.'))
