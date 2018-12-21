@@ -1,8 +1,5 @@
-List Skill for pytlas |licence|
+list skill for pytlas ![License]( https://img.shields.io/badge/License-GPL%20v3-blue.svg)
 ===============================
-
-.. |license| image:: https://img.shields.io/badge/License-GPL%20v3-blue.svg
-    :target: https://www.gnu.org/licenses/gpl-3.0
 
 The skill which helps you to manage your \"aide-mémoire" lists.
 
