@@ -6,8 +6,12 @@ A skill powered by the open, non intrusive and super easy  pytlas assistant fram
 
 see for details: https://github.com/atlassistant/pytlas
 
-Sentences
-----------
+Supported languages
+-------------------
+- English
+
+Typical sentences
+-----------------
 - create a new list named shopping list
 - add eggs in my shopping list
 - remove eggs from my shopping list
@@ -15,6 +19,7 @@ Sentences
 - show me the shopping list
 - send to to.someone@mail.com the shopping list
 - send to me the shopping list
+- how does the list skill work
 
 Configuration:
 ---------------
