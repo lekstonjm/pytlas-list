@@ -1,22 +1,19 @@
 from pytlas import intent, training, translations
+import pytlas.settings as settings
 import json
 import os
 import unicodedata
 import re
 import smtplib
 import sys
-import pytlas.settings as settings
 # This entity will be shared among training data since it's not language specific
 
 
 @training('en')
 def en_data(): return """
-%[create_list]
-  create a new list named @[list_name]
-  create a new list @[list_name]
-  create a list @[list_name]
-  add a list
-  new list with name @[list_name]
+%[enumerate_list]
+  what are my lists
+  enumerate my lists
 
 %[delete_list]
   delete list @[list_name]
@@ -37,9 +34,9 @@ def en_data(): return """
   remove @[item_name] from @[list_name]
 
 %[display_list]
+  what is the @[list_name] content
   show me the @[list_name] content
   show me my @[list_name]
-  enumerate content of my @[list_name]
   display my @[list_name]
   what I have in my @[list_name]
 
@@ -154,35 +151,6 @@ def on_help_list(req):
   req.agent.answer(req._(help).format(list_dir_path, from_email, smtp_address, smtp_login, smtp_pwd))
   return req.agent.done()
   
-
-
-@intent('create_list')
-def on_create_list(req):
-  list_name = req.intent.slot('list_name').first().value
-  if not list_name:
-    return req.agent.ask('list_name',req._('Please choose a name for your list.'))
-
-  list_dir_path = settings.get('path',section='pytlas_list')  
-  if not list_dir_path:
-    list_dir_path = default_pytlas_list_path()
-  
-  if not os.path.exists(list_dir_path):
-    os.makedirs(list_dir_path)
-
-  list_path = build_list_file_path(list_name, list_dir_path)
-  
-  if os.path.exists(list_path):
-    req.agent.answer(req._('Oops! This list already exists.'))
-    return req.agent.done()
-
-  try:  
-    create_blank_file(list_name, list_path)
-  except:
-    req.agent.answer(req._('Oops! Something bad append. I can\'t create file "{0}"').format(list_path))
-    return req.agent.done()    
-
-  req.agent.answer(req._('Ok! your list "{0}" has been created.').format(list_name))
-  return req.agent.done()
 
 @intent('delete_list')
 def on_delete_list(req):

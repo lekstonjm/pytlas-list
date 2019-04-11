@@ -1,2 +1,2 @@
-ws/
 __pycache__/
+.coverage
