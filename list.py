@@ -1,4 +1,4 @@
-from pytlas import intent, training, translations
+from pytlas import intent, training, translations, meta
 import pytlas.settings as settings
 import json
 import os
@@ -80,25 +80,6 @@ def en_data(): return """
 #def fr_translations(): return {
 #}
 
-help="""
-The list skill helps you to manage your short \"aide-mémoire" lists.
-
-Example of sentences : 
-  create a new list named shopping list
-  add eggs in my shopping list
-  remove eggs from my shopping list
-  delete the list shopping list
-  show me the shopping list
-  send to to.someone@mail.com the shopping list
-  send to me the shopping list
-
-Configuration:
-  list file path = {0}  
-  from email = {1}
-  smtp address = {2}
-  smtp login = {3}
-  smtp password = {4}
-"""
 
 def slugify(value):
   """
@@ -139,18 +120,32 @@ def remove_from_file(item_name, list_path):
   with open(list_path,'w') as json_file:
     json.dump(list_content, json_file)
 
-@intent('help_list')
-def on_help_list(req):
+
+@meta()
+def help_meta(_): return {
+  'name': _('list'),
+  'description': _('The skill which helps you to manage your TODO lists.'),
+  'author': 'Jean-Michel LEKSTON',
+  'version': '1.0.0',
+  'homepage': 'https://github.com/atlassistant/pytlas-list',
+}
+
+@intent('enumerate_list')
+def on_enumerate_list(req):
   list_dir_path = settings.get('path',section='pytlas_list')  
   if not list_dir_path:
-    list_dir_path = default_pytlas_list_path()  
-  from_email = settings.get('from_email',section='pytlas_list')
-  smtp_address = settings.get('smtp_address',section='pytlas_list')
-  smtp_login = settings.get('smtp_login',section='pytlas_list')
-  smtp_pwd = settings.get('smtp_pwd',section='pytlas_list')
-  req.agent.answer(req._(help).format(list_dir_path, from_email, smtp_address, smtp_login, smtp_pwd))
+    list_dir_path = default_pytlas_list_path()
+  found_list = ""
+  for f in os.listdir(list_dir_path): 
+    if os.path.isfile(os.path.join(list_dir_path, f)):
+      found_list = found_list + ', {0}'.format(f)
+  result = ""
+  if found_list == "":
+    result = req._("I found no lists")
+  else:
+    result = req._("I found : {0}").format(found_list)
+  req.answer(result)
   return req.agent.done()
-  
 
 @intent('delete_list')
 def on_delete_list(req):
