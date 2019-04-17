@@ -143,7 +143,7 @@ def on_enumerate_list(req):
         list_content = json.load(json_file)
         list_names.append(list_content['name'])
   if len(list_names) == 0:
-    result = req._("I found no lists")
+    result = req._("I found no list")
   elif len(list_names) == 1:
     result = req._("I found only one list : {0}").format(list_names[0])
   else:
