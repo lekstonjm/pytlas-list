@@ -135,16 +135,22 @@ def on_enumerate_list(req):
   list_dir_path = settings.get('path',section='pytlas_list')  
   if not list_dir_path:
     list_dir_path = default_pytlas_list_path()
-  found_list = ""
+  list_names = []
   for f in os.listdir(list_dir_path): 
-    if os.path.isfile(os.path.join(list_dir_path, f)):
-      found_list = found_list + ', {0}'.format(f)
-  result = ""
-  if found_list == "":
+    file_path = os.path.join(list_dir_path, f)
+    if os.path.isfile(file_path) and os.path.splitext(file_path)[1] == '.json':
+      with open(file_path,'r') as json_file:
+        list_content = json.load(json_file)
+        list_names.append(list_content['name'])
+  if len(list_names) == 0:
     result = req._("I found no lists")
+  elif len(list_names) == 1:
+    result = req._("I found only one list : {0}").format(list_names[0])
   else:
-    result = req._("I found : {0}").format(found_list)
-  req.answer(result)
+    found_list = ', '.join(list_names)
+    result = req._("I found the following lists : {0}").format(found_list)
+
+  req.agent.answer(result)
   return req.agent.done()
 
 @intent('delete_list')
@@ -258,7 +264,6 @@ def on_display_list(req):
     list_dir_path = default_pytlas_list_path()
   
   list_path = build_list_file_path(list_name, list_dir_path)
-  print(list_path)
   if not os.path.exists(list_path):
     req.agent.answer(req._('Hummm! The list "{0}" seems not exists.').format(list_name))
     return req.agent.done()
